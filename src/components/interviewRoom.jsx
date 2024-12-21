@@ -3,8 +3,10 @@ import styled from 'styled-components';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { IoSend } from "react-icons/io5";
+import socket from '../socket'
+import { SwipeableDrawer, TextField, Button } from '@mui/material';
 
-function InterviewRoom({socket}) {
+function InterviewRoom() {
     const location = useLocation();
     const { role, interviewID, name } = location.state || {};
     const navigate = useNavigate();
@@ -20,8 +22,14 @@ int main() {
 `;
     const [code, setCode] = useState(code1);
 
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [customInput, setCustomInput] = useState('');
+
     const handleChange = (e) => {
-        setCode(e.target.value);
+        const code2 = e.target.value;
+        setCode(code2);
+        // console.log('Emitting addToCode:', { interviewID, code2 });
+        socket.emit('addToCode', { interviewID, code2 });
     };
 
     async function leave() {
@@ -31,11 +39,15 @@ int main() {
         });
 
         // console.log(response)
+        // if(socket) {
+        //     socket.emit('disconnect' , {});
+        // }
         navigate('/interview');
     }
 
     async function sendmsg() {
         const msg = document.getElementById('chatarea').value;
+        if (msg == '') return;
 
         document.getElementById('chatarea').value = '';
 
@@ -45,7 +57,7 @@ int main() {
 
         // console.log(response);
         if (socket) {
-            socket.emit('sendMessage', { interviewID , msg , role });
+            socket.emit('sendMessage', { interviewID, msg, role });
         }
     }
 
@@ -54,20 +66,50 @@ int main() {
             role, interviewID
         });
 
-        console.log(response.data)
+        // console.log(response.data)
 
         setChat(response.data);
     }
 
+    async function runCode() {
+        console.log(customInput);
+        const response = await axios.post('http://localhost:5000/run/runUserCode' , {
+            code ,
+            customInput
+        });
+        console.log(response);
+    }
+
+    const toggleDrawer = (open) => () => {
+        setDrawerOpen(open);
+    };
+
+    const handleCustomInputChange = (e) => {
+        setCustomInput(e.target.value);
+    };
+
     useEffect(() => {
         if (role && interviewID) {
+            socket.emit('joinRoom', { interviewID });
             loadChat();
         }
-
+    
         socket.on('receiveMessage', ({ message, sender }) => {
             loadChat();
         });
-    } , [socket])
+    
+        socket.on('addToYourCode', ({ code }) => {
+            console.log('Received addToYourCode:', code);
+            setCode(code);
+        });
+    
+        return () => {
+            if (socket) {
+                socket.off('receiveMessage');
+                socket.off('addToYourCode');
+            }
+        };
+    }, [role, interviewID]); 
 
     return (
         <Container>
@@ -94,11 +136,32 @@ int main() {
                     <h1>Code Area</h1>
                     <textarea value={code} onChange={handleChange} />
                     <div id='runsubmitbtn'>
-                        <button>Run</button>
-                        <button>Submit</button>
+                        <button onClick={() => runCode()}>Run</button>
+                        <button onClick={toggleDrawer(true)}>Custom Input</button>
                     </div>
                 </div>
             </div>
+            <SwipeableDrawer
+                anchor="right"
+                open={drawerOpen}
+                onClose={toggleDrawer(false)}
+                onOpen={toggleDrawer(true)}
+            >
+                <div style={{ padding: '20px', width: '250px' }}>
+                    <h2>Enter Custom Input</h2>
+                    <TextField
+                        label="Custom Input"
+                        multiline
+                        fullWidth
+                        rows={4}
+                        value={customInput}
+                        onChange={handleCustomInputChange}
+                        variant="outlined"
+                    />
+                    <div style={{ marginTop: '10px' }}>
+                    </div>
+                </div>
+            </SwipeableDrawer>
         </Container>
     );
 }
@@ -140,7 +203,7 @@ const Container = styled.div`
 
     #codearea {
         height: 100%;
-        width: 55%;
+        width: 60%;
         background-color: #2b2b3d;
         padding: 20px;
         box-sizing: border-box;
@@ -149,7 +212,7 @@ const Container = styled.div`
     #chat {
         border-right: 1px solid #444;
         height: 100%;
-        width: 45%;
+        width: 40%;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -315,13 +378,13 @@ const Container = styled.div`
     #onechat small {
         margin-top: 5px;
         font-size: 0.8rem;
-        color: #aaa;
+        color: white;
         align-self: flex-end;
     }
 
     .own-message {
         align-self: flex-end;
-        background-color: #42c346 !important;
+        background-color: #12aa17 !important;
         color: white;
     }
 

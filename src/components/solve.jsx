@@ -201,8 +201,8 @@ int main() {
                         padding: 2,
                         backgroundColor: '#1e1e2e',
                         color: 'white',
-                        maxHeight: '90vh', // Ensures the drawer doesn't exceed the viewport height
-                        overflowY: 'auto', // Scrolls if the content exceeds max height
+                        maxHeight: '90vh', 
+                        overflowY: 'auto', 
                     }}
                 >
                     <IconButton
@@ -225,9 +225,9 @@ int main() {
                             padding: '10px',
                             borderRadius: '5px',
                             color: '#5cfa5c',
-                            whiteSpace: 'pre-wrap', // Ensures text wraps to the next line
-                            wordWrap: 'break-word', // Breaks long words to fit within the container
-                            overflow: 'auto', // Adds a scrollbar if content exceeds the parent width
+                            whiteSpace: 'pre-wrap', 
+                            wordWrap: 'break-word', 
+                            overflow: 'auto', 
                         }}
                     >
                         {output}
@@ -242,9 +242,9 @@ int main() {
                             borderRadius: '5px',
                             color: '#ffa500',
                             marginBottom: '20px',
-                            whiteSpace: 'pre-wrap', // Ensures text wraps to the next line
-                            wordWrap: 'break-word', // Breaks long words to fit within the container
-                            overflow: 'auto', // Adds a scrollbar if content exceeds the parent width
+                            whiteSpace: 'pre-wrap', 
+                            wordWrap: 'break-word', 
+                            overflow: 'auto', 
                         }}
                     >
                         {expectedOutput}

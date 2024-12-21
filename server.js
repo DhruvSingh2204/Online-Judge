@@ -36,6 +36,9 @@ io.on('connection', (socket) => {
         console.log(`User ${socket.id} joined room: ${interviewID}`);
         socket.join(interviewID);
 
+        // const socketsInRoom = io.sockets.adapter.rooms.get(interviewID) || [];
+        // console.log(`Sockets in room ${interviewID}:`, Array.from(socketsInRoom));
+
         socket.to(interviewID).emit('userJoined', { message: 'A new user has joined the interview room!' });
     });
 
@@ -43,6 +46,17 @@ io.on('connection', (socket) => {
         console.log(`Message from ${sender} in room ${interviewID}: ${message}`);
         io.to(interviewID).emit('receiveMessage', { sender, message });
     });
+
+    socket.on('addToCode', (data) => {
+        console.log('data ->', data);
+        const { interviewID, code2 } = data;
+        if (!interviewID || !code2) {
+            console.log('Invalid data received:', interviewID, code2);
+            return;
+        }
+        console.log(`Received addToCode from ${socket.id} for room ${interviewID}:`, code2);
+        io.to(interviewID).emit('addToYourCode', { code: code2 });
+    });    
 
     socket.on('leaveRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} left room: ${interviewID}`);

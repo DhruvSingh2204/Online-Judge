@@ -6,7 +6,7 @@ const interview = require('../models/interview');
 exports.startInterview = async(req , res) => {
     const {name , interviewID , role} = req.body;
 
-    console.log(name , interviewID , role)
+    // console.log(name , interviewID , role)
     
     const interview = await interviewDB.findOne({interviewID : interviewID});
     
@@ -41,7 +41,7 @@ exports.startInterview = async(req , res) => {
 exports.leaveInterview = async(req , res) => {
     const {role , interviewID} = req.body;
 
-    console.log(role , interviewID)
+    // console.log(role , interviewID)
 
     const interview = await interviewDB.findOne({interviewID : interviewID});
 

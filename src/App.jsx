@@ -11,6 +11,7 @@ import Profile from './components/profile'
 import InterviewMain from './components/interviewMain'
 import InterviewRoom from './components/interviewRoom'
 import { io } from 'socket.io-client';
+// const newSocket = io('http://localhost:5000');
 
 function App() {
   const [correctUN, setCorrectUN] = useState('');
@@ -28,11 +29,6 @@ function App() {
     if (storedEmail) {
       setCorrectEmail(storedEmail); // Since storedEmail is just the email string
     }
-  }, [])
-
-  useEffect(() => {
-    const newSocket = io('http://localhost:5000');
-    setSocket(newSocket);
   }, [])
 
   return (
@@ -57,10 +53,10 @@ function App() {
             element={<><Header /><Profile correctUN={correctUN} /></>} />
           <Route
             path="/interview"
-            element={<><Header /><InterviewMain socket={socket} /></>} />
+            element={<><Header /><InterviewMain /></>} />
           <Route
             path="/room"
-            element={<><InterviewRoom socket={socket} /></>} />
+            element={<><InterviewRoom /></>} />
         </Routes>
       </BrowserRouter>
     </>

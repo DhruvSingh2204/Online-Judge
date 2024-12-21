@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
+import socket from '../socket'
 
-function InterviewMain({ socket }) {
+function InterviewMain() {
     const [role, setRole] = useState('Interviewer');
     const navigate = useNavigate();
 

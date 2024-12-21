@@ -205,3 +205,13 @@ exports.runUserInput = async (req, res) => {
         return res.status(500).json({ message: "Internal server error", error });
     }
 };
+
+exports.runUserCode = async(req , res) => {
+    const {code , customInput} = req.body;
+
+    console.log(code , customInput);
+
+
+    
+    return res.status(200).json('dekh')
+}
