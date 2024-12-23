@@ -35,11 +35,22 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} joined room: ${interviewID}`);
         socket.join(interviewID);
-
-        // const socketsInRoom = io.sockets.adapter.rooms.get(interviewID) || [];
-        // console.log(`Sockets in room ${interviewID}:`, Array.from(socketsInRoom));
-
+    
+        const socketsInRoom = io.sockets.adapter.rooms.get(interviewID) || [];
+        const t = Array.from(socketsInRoom).length;
+    
+        // console.log('Current sockets in room ->', Array.from(socketsInRoom));
+        // console.log('Number of sockets in room (t) ->', t);
+    
         socket.to(interviewID).emit('userJoined', { message: 'A new user has joined the interview room!' });
+    
+        if (t === 2) {
+            console.log('Emitting notWaiting for room:', interviewID);
+            io.to(interviewID).emit('notWaiting');
+        } else if (t < 2) {
+            console.log('Room is waiting for another user to join:', interviewID);
+            io.to(interviewID).emit('waiting');
+        }
     });
 
     socket.on('sendMessage', ({ interviewID, message, sender }) => {
@@ -61,6 +72,15 @@ io.on('connection', (socket) => {
     socket.on('leaveRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} left room: ${interviewID}`);
         socket.leave(interviewID);
+
+        const socketsInRoom = io.sockets.adapter.rooms.get(interviewID) || [];
+        // console.log('check ->' , Array.from(socketsInRoom))
+        const t = Array.from(socketsInRoom).length;
+        // console.log('t -> ' , t);
+
+        if(t < 2) {
+            io.to(interviewID).emit('waiting');
+        }
     });
 
     socket.on('disconnect', () => {

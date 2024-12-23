@@ -24,6 +24,8 @@ int main() {
 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [customInput, setCustomInput] = useState('');
+    const [drawerOpen2, setDrawerOpen2] = useState(false);
+    const [output , setOutput] = useState('');
 
     const handleChange = (e) => {
         const code2 = e.target.value;
@@ -39,9 +41,9 @@ int main() {
         });
 
         // console.log(response)
-        // if(socket) {
-        //     socket.emit('disconnect' , {});
-        // }
+        if (socket) {
+            socket.emit('leaveRoom', { interviewID });
+        }
         navigate('/interview');
     }
 
@@ -77,11 +79,30 @@ int main() {
             code ,
             customInput
         });
-        console.log(response);
+
+        if(response.status == 201) {
+            setOutput(response.data.details);
+            setDrawerOpen2(true);
+            return;
+        }
+
+        if(response.status == 202) {
+            setOutput('Runtime Error');
+            setDrawerOpen2(true);
+            return;
+        }
+
+        console.log(response.data);
+        setOutput(response.data);
+        setDrawerOpen2(true);
     }
 
     const toggleDrawer = (open) => () => {
         setDrawerOpen(open);
+    };
+
+    const toggleDrawer2 = (open) => () => {
+        setDrawerOpen2(open);
     };
 
     const handleCustomInputChange = (e) => {
@@ -103,10 +124,22 @@ int main() {
             setCode(code);
         });
     
+        socket.on('notWaiting', () => {
+            console.log('Both users are in the room now.');
+            document.getElementById('wait').innerText = '';
+        });
+    
+        socket.on('waiting', () => {
+            console.log('Waiting for another user to join...');
+            document.getElementById('wait').innerText = `Waiting for ${role === 'Interviewer' ? "Interviewee" : "Interviewer"} to join...`;
+        });
+    
         return () => {
             if (socket) {
                 socket.off('receiveMessage');
                 socket.off('addToYourCode');
+                socket.off('notWaiting');
+                socket.off('waiting');
             }
         };
     }, [role, interviewID]); 
@@ -115,6 +148,7 @@ int main() {
         <Container>
             <div id='header'>
                 <h1>Welcome {role} {name} </h1>
+                <h2 id='wait'>Waiting for {role === 'Interviewer' ? "Interviewee" : "Interviewer"} to join...</h2>
                 <button id='leaveInterviewBtn' onClick={() => leave()}>Leave Interview</button>
             </div>
             <div id='main'>
@@ -122,7 +156,8 @@ int main() {
                     <div id='chats'>
                         {chat.map((item, index) => (
                             <div id='onechat' key={index} className={item.sender === role ? 'own-message' : 'other-message'}>
-                                <strong>{item.sender == role ? 'You' : item.sender}:</strong> {item.message}
+                                <strong>{item.sender == role ? 'You' : item.sender}:</strong>
+                                {item.message}
                                 <small>{new Date(item.dt).toLocaleString()}</small>
                             </div>
                         ))}
@@ -138,6 +173,7 @@ int main() {
                     <div id='runsubmitbtn'>
                         <button onClick={() => runCode()}>Run</button>
                         <button onClick={toggleDrawer(true)}>Custom Input</button>
+                        <button onClick={toggleDrawer2(true)}>Output Panel</button>
                     </div>
                 </div>
             </div>
@@ -160,6 +196,41 @@ int main() {
                     />
                     <div style={{ marginTop: '10px' }}>
                     </div>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={toggleDrawer(false)}
+                        style={{ marginTop: '10px' }}
+                    >
+                        Close
+                    </Button>
+                </div>
+            </SwipeableDrawer>
+            <SwipeableDrawer
+                anchor="bottom"
+                open={drawerOpen2}
+                onClose={toggleDrawer2(false)}
+                onOpen={toggleDrawer2(true)}
+            >
+                <div style={{ padding: '20px' }}>
+                    <h2>Output</h2>
+                    <pre style={{
+                        backgroundColor: '#1e1e2f',
+                        color: '#f0f0f0',
+                        padding: '10px',
+                        borderRadius: '5px',
+                        overflowX: 'auto'
+                    }}>
+                        {output || 'No output yet.'}
+                    </pre>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={toggleDrawer2(false)}
+                        style={{ marginTop: '10px' }}
+                    >
+                        Close
+                    </Button>
                 </div>
             </SwipeableDrawer>
         </Container>

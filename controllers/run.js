@@ -25,7 +25,7 @@ exports.run = async (req, res) => {
     exec(compileCommand, (compileErr, stdout, stderr) => {
         if (compileErr) {
             // console.error(`Compilation error: ${stderr}`);
-            wrongSubmission(correctUN , name , "Compile Error")
+            wrongSubmission(correctUN, name, "Compile Error")
             return res.status(201).json({ error: 'Compilation failed', details: stderr, expectedOutput: expectedOutput });
         }
 
@@ -47,7 +47,7 @@ exports.run = async (req, res) => {
 
         runProcess.on('close', (code) => {
             if (code !== 0) {
-                wrongSubmission(correctUN , name , "Runtime Error")
+                wrongSubmission(correctUN, name, "Runtime Error")
                 return res.status(202).json({ error: 'Execution failed', expectedOutput: expectedOutput });
             }
 
@@ -64,7 +64,7 @@ exports.run = async (req, res) => {
             if (isOutputCorrect) {
                 markInDatabase(correctUN, name)
             } else {
-                wrongSubmission(correctUN , name , "Wrong Answer")
+                wrongSubmission(correctUN, name, "Wrong Answer")
             }
 
             return res.status(200).json({
@@ -91,9 +91,9 @@ async function markInDatabase(correctUN, name) {
             user.submissions = [];
         }
 
-        user.submissions.push({ name: name, isCorrect: true, time: new Date() , verdict : "Accepted" });
+        user.submissions.push({ name: name, isCorrect: true, time: new Date(), verdict: "Accepted" });
 
-        if(!user.solved.includes(name)) {
+        if (!user.solved.includes(name)) {
             user.solved.push(name);
         }
 
@@ -106,14 +106,14 @@ async function markInDatabase(correctUN, name) {
     }
 }
 
-async function wrongSubmission(correctUN, name , verdict1) {
+async function wrongSubmission(correctUN, name, verdict1) {
     const user = await peopleDB.findOne({ username: correctUN });
 
     if (!Array.isArray(user.submissions)) {
         user.submissions = [];
     }
 
-    user.submissions.push({ name: name, isCorrect: false, time: new Date() , verdict : verdict1 });
+    user.submissions.push({ name: name, isCorrect: false, time: new Date(), verdict: verdict1 });
 
     await user.save();
 }
@@ -206,12 +206,57 @@ exports.runUserInput = async (req, res) => {
     }
 };
 
-exports.runUserCode = async(req , res) => {
-    const {code , customInput} = req.body;
+exports.runUserCode = async (req, res) => {
+    const { code, customInput : inputs } = req.body;
 
-    console.log(code , customInput);
+    const codeFileName = path.join(__dirname, 'temp.cpp');
+    const userOutputFile = path.join(__dirname, 'interview_output.txt');
 
+    fs.writeFileSync(codeFileName, code);
 
-    
-    return res.status(200).json('dekh')
+    const normalizeOutput = (output) => output.trim().replace(/\s+/g, ' ').toLowerCase();
+
+    // Function to compile, run code, and save its output
+    const executeCode = async (filePath, outputFile, inputs) => {
+        const outputFilePath = filePath.replace('.cpp', '.out');
+        const compileCommand = `g++ "${filePath}" -o "${outputFilePath}"`;
+
+        return new Promise((resolve, reject) => {
+            exec(compileCommand, (compileErr, stdout, stderr) => {
+                if (compileErr) {
+                    console.log(compileErr)
+                    return res.status(201).json({ error: `Compilation failed`, details: stderr });
+                }
+
+                const runCommand = `"${outputFilePath}"`;
+                const runProcess = exec(runCommand);
+
+                runProcess.stdin.write(inputs.trim() + '\n');
+                runProcess.stdin.end();
+
+                let output = '';
+                runProcess.stdout.on('data', (data) => {
+                    output += data.toString();
+                });
+
+                runProcess.stderr.on('data', (data) => {
+                    console.error('Execution Error:', data.toString());
+                });
+
+                runProcess.on('close', (code) => {
+                    if (code !== 0) {
+                        return res.status(202).json({ error: `Execution failed with code ${code}` });
+                    }
+                    fs.writeFileSync(outputFile, output.trim());
+                    resolve(normalizeOutput(output));
+                });
+            });
+        });
+    };
+
+    const userOutput = await executeCode(codeFileName, userOutputFile, inputs);
+
+    console.log(userOutput);
+
+    return res.status(200).json(userOutput);
 }
