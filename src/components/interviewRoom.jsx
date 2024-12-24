@@ -52,9 +52,13 @@ int main() {
         if (msg == '') return;
 
         document.getElementById('chatarea').value = '';
-
+        const token = localStorage.getItem('token');
         const response = await axios.post('http://localhost:5000/interview/sendmsg', {
             role, interviewID, msg
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
 
         // console.log(response);
@@ -64,8 +68,13 @@ int main() {
     }
 
     async function loadChat() {
+        const token = localStorage.getItem('token');
         const response = await axios.post('http://localhost:5000/interview/loadChat', {
             role, interviewID
+        } , {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         });
 
         // console.log(response.data)

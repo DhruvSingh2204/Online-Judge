@@ -9,6 +9,12 @@ function PostModal({ correctUN , setModalopen , setShowpost }) {
         const content = document.getElementById('content').value;
         
         try {
+            if (!correctUN) {
+                alert("Please log in to post");
+            }
+            if (!topic) {
+                alert("Please write topic name");
+            }
             const response = await axios.post('http://localhost:5000/postRoute/post' , {
                 correctUN , topic , content
             });

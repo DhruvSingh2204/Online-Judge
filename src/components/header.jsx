@@ -1,32 +1,45 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components'
 
-function header() {
-    return (
-        <Container>
-            <div id='top'>
-                <a href='#'><h1>Online Judge</h1></a>
-                <div id='features'>
-                    <NavMenu>
-                        <a href="main">
-                            <span>Discuss</span>
-                        </a>
-                        <a href="/problems">
-                            <span>Problems</span>
-                        </a>
+function header({ setCorrectUN, setCorrectEmail }) {
+  const navigate = useNavigate();
 
-                        <a href="/profile">
-                            <span>My Profile</span>
-                        </a>
+  function handleLogout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('email');
+    localStorage.removeItem('token');
+    setCorrectUN('');
+    setCorrectEmail('');
+    navigate('/')
+  }
 
-                        <a href="/interview">
-                            <span>Interviews</span>
-                        </a>
-                    </NavMenu>
-                </div>
-            </div>
-        </Container>
-    )
+  return (
+    <Container>
+      <div id='top'>
+        <a href='#'><h1>Online Judge</h1></a>
+        <div id='features'>
+          <NavMenu>
+            <a href="/main">
+              <span>Discuss</span>
+            </a>
+            <a href="/problems">
+              <span>Problems</span>
+            </a>
+
+            <a href="/profile">
+              <span>My Profile</span>
+            </a>
+
+            <a href="/interview">
+              <span>Interviews</span>
+            </a>
+          </NavMenu>
+        </div>
+        <button id='b1' onClick={() => handleLogout()}><h2>LogOut</h2></button>
+      </div>
+    </Container>
+  )
 }
 
 export default header
@@ -50,6 +63,25 @@ const Container = styled.div`
             color: white;
             
         }
+    }
+
+    #b1 {
+      background-color: #ff4d4d;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      padding: 5px 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: #cc0000;
+      }
+
+      h2 {
+        margin: 0;
+      }
     }
 `
 

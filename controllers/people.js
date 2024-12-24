@@ -31,15 +31,15 @@ exports.login = async (req , res) => {
 
         console.log(`${userName} Logged In!!`)
 
-        // const token = jwt.sign(
-        //     { id: foundUser._id, userName: foundUser.username, email: foundUser.email },
-        //     process.env.JWT_SECRET,
-        //     { expiresIn: '1h' }
-        // );
+        const token = jwt.sign(
+            { id: foundUser._id, userName: foundUser.username, email: foundUser.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
 
         return res.status(200).json({
             'message': `User ${foundUser.username} logged in!!`,
-            // 'token' : token ,
+            'token' : token ,
             'user': {
                 id: foundUser._id,
                 userName: foundUser.username,
@@ -85,11 +85,11 @@ exports.signUp = async (req , res) => {
 
         console.log(newUser);
 
-        // const token = jwt.sign(
-        //     {id: newUser._id , userName: newUser.username, email: newUser.email },
-        //     process.env.JWT_SECRET,
-        //     { expiresIn: '1h' }
-        // );
+        const token = jwt.sign(
+            {id: newUser._id , userName: newUser.username, email: newUser.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
 
         // return res.status(200).json({
         //     'message': `New User - ${newUser.username} created`,
@@ -103,7 +103,7 @@ exports.signUp = async (req , res) => {
 
         return res.status(200).json({
             'message': `New User - ${newUser.username} created`,
-            // 'token' : token ,
+            'token' : token ,
             'user': {
                 id: newUser._id,
                 userName: newUser.username,

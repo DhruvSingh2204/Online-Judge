@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import socket from '../socket'
 
-function InterviewMain() {
+function InterviewMain({correctUN}) {
     const [role, setRole] = useState('Interviewer');
     const navigate = useNavigate();
 
@@ -18,10 +18,27 @@ function InterviewMain() {
         const interviewID = document.getElementById('interviewID').value;
 
         try {
+            if(!correctUN) {
+                alert("Please log in to start interview");
+                return;
+            }
+            if(!name) {
+                alert("Please give your name to start interview");
+                return;
+            }
+            if(!interviewID) {
+                alert("Please give interviewID to start interview");
+                return;
+            }
+            const token = localStorage.getItem('token');
             const response = await axios.post('http://localhost:5000/interview/startInterview', {
                 name,
                 interviewID,
                 role,
+            } , {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             if (response.status !== 201) {

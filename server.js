@@ -67,7 +67,7 @@ io.on('connection', (socket) => {
         }
         console.log(`Received addToCode from ${socket.id} for room ${interviewID}:`, code2);
         io.to(interviewID).emit('addToYourCode', { code: code2 });
-    });    
+    });
 
     socket.on('leaveRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} left room: ${interviewID}`);

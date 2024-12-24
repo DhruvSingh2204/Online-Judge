@@ -10,13 +10,11 @@ import './App.css'
 import Profile from './components/profile'
 import InterviewMain from './components/interviewMain'
 import InterviewRoom from './components/interviewRoom'
-import { io } from 'socket.io-client';
 // const newSocket = io('http://localhost:5000');
 
 function App() {
   const [correctUN, setCorrectUN] = useState('');
   const [correctEmail, setCorrectEmail] = useState('');
-  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user')); // Get the userName from localStorage
@@ -40,20 +38,19 @@ function App() {
             element={<Login setCorrectUN={setCorrectUN} setCorrectEmail={setCorrectEmail} />} />
           <Route
             path="/main"
-            element={<><Header /><Main correctUN={correctUN} /></>} />
+            element={<><Header setCorrectUN={setCorrectUN} setCorrectEmail={setCorrectEmail} /><Main correctUN={correctUN} /></>} />
           <Route
             path="/problems"
-            // element={<><Header /><Problems correctUN={correctUN} /></>} />
-            element={<><Header /><ImgSlider /><Problems correctUN={correctUN} /></>} />
+            element={<><Header setCorrectUN={setCorrectUN} setCorrectEmail={setCorrectEmail} /><ImgSlider /><Problems correctUN={correctUN} /></>} />
           <Route
             path="/solve"
             element={<><Solve correctUN={correctUN} /></>} />
           <Route
             path="/profile"
-            element={<><Header /><Profile correctUN={correctUN} /></>} />
+            element={<><Header setCorrectUN={setCorrectUN} setCorrectEmail={setCorrectEmail} /><Profile correctUN={correctUN} /></>} />
           <Route
             path="/interview"
-            element={<><Header /><InterviewMain /></>} />
+            element={<><Header setCorrectUN={setCorrectUN} setCorrectEmail={setCorrectEmail} /><InterviewMain correctUN={correctUN} /></>} />
           <Route
             path="/room"
             element={<><InterviewRoom /></>} />

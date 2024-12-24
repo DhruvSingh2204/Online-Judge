@@ -21,14 +21,14 @@ function Login({ setCorrectUN, setCorrectEmail }) {
                 email
             });
 
-            console.log(response.data)
+            // console.log(response.data)
 
-            // const token = response.data.token;
-            // if (token) {
-            //     localStorage.setItem('token', token);
-            // } else {
-            //     console.error('No token received');
-            // }
+            const token = response.data.token;
+            if (token) {
+                localStorage.setItem('token', token);
+            } else {
+                console.error('No token received');
+            }
 
             const responseDivSignup = document.getElementById('responseDivSignUp');
 
@@ -71,7 +71,7 @@ function Login({ setCorrectUN, setCorrectEmail }) {
                 password
             });
 
-            console.log(response.data)
+            // console.log(response.data)
 
             const responseDivLogin = document.getElementById('responseDivLogin');
 
