@@ -37,7 +37,7 @@ app.use('/run', require('./routes/run'));
 app.use('/interview', require('./routes/interview'));
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+    // console.log('A user connected:', socket.id);
 
     socket.on('joinRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} joined room: ${interviewID}`);
@@ -66,7 +66,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('addToCode', (data) => {
-        console.log('data ->', data);
+        // console.log('data ->', data);
         const { interviewID, code2 } = data;
         if (!interviewID || !code2) {
             console.log('Invalid data received:', interviewID, code2);
@@ -91,7 +91,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('A user disconnected:', socket.id);
+        // console.log('A user disconnected:', socket.id);
     });
 });
 
