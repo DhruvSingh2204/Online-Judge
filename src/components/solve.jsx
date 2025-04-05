@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { SwipeableDrawer, Box, Typography, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import BASE_URL from '../config.js';
 
 function Solve({ correctUN }) {
     const location = useLocation();
@@ -39,7 +40,7 @@ int main() {
     async function run() {
         try {
             document.getElementById('submitBtn').innerHTML = `<img src="https://media.tenor.com/-n8JvVIqBXkAAAAM/dddd.gif" style="height: 12px;" />`;
-            const response = await axios.post('http://localhost:5000/run/runCode', {
+            const response = await axios.post(`${BASE_URL}/run/runCode`, {
                 code: code,
                 inputs: problem.inputs,
                 output: problem.outputs,
@@ -81,7 +82,7 @@ int main() {
     async function runUserInput() {
         try {
             document.getElementById('runBtn').innerHTML = `<img src="https://media.tenor.com/-n8JvVIqBXkAAAAM/dddd.gif" style="height: 12px;" />`;
-            const response = await axios.post('http://localhost:5000/run/runUserInput', {
+            const response = await axios.post(`${BASE_URL}/run/runUserInput`, {
                 code: code,
                 inputs: exampleInput,
                 name: problem.name
