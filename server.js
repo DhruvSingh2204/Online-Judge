@@ -15,7 +15,16 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://online-judge-ashy.vercel.app",
+];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+}));
+
 app.use(express.json());
 
 connectDB();
@@ -35,15 +44,15 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ interviewID }) => {
         console.log(`User ${socket.id} joined room: ${interviewID}`);
         socket.join(interviewID);
-    
+
         const socketsInRoom = io.sockets.adapter.rooms.get(interviewID) || [];
         const t = Array.from(socketsInRoom).length;
-    
+
         // console.log('Current sockets in room ->', Array.from(socketsInRoom));
         // console.log('Number of sockets in room (t) ->', t);
-    
+
         socket.to(interviewID).emit('userJoined', { message: 'A new user has joined the interview room!' });
-    
+
         if (t === 2) {
             console.log('Emitting notWaiting for room:', interviewID);
             io.to(interviewID).emit('notWaiting');
@@ -78,7 +87,7 @@ io.on('connection', (socket) => {
         const t = Array.from(socketsInRoom).length;
         // console.log('t -> ' , t);
 
-        if(t < 2) {
+        if (t < 2) {
             io.to(interviewID).emit('waiting');
         }
     });
