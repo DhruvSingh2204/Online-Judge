@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import BASE_URL from '../config.js';
 
 function Login({ setCorrectUN, setCorrectEmail }) {
     const [userName, setuserName] = useState('');
@@ -15,7 +16,7 @@ function Login({ setCorrectUN, setCorrectEmail }) {
         e.preventDefault();
 
         try {
-            const response = await axios.post('http://localhost:5000/auth/signUp', {
+            const response = await axios.post(`${BASE_URL}/auth/signUp`, {
                 userName,
                 password,
                 email
@@ -66,7 +67,7 @@ function Login({ setCorrectUN, setCorrectEmail }) {
         e.preventDefault();
 
         try {
-            const response = await axios.post('http://localhost:5000/auth/login', {
+            const response = await axios.post(`${BASE_URL}/auth/login`, {
                 userName,
                 password
             });

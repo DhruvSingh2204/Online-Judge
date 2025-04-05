@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import PostModal from './postModal';
 import axios from 'axios';
+import BASE_URL from '../config.js';
 
 function main({ correctUN }) {
     const [modalopen , setModalopen] = useState(0);
@@ -10,7 +11,7 @@ function main({ correctUN }) {
     useEffect(() => {
         async function showPosts() {
             try {
-                const response = await axios.post('http://localhost:5000/postRoute/showPosts', {});
+                const response = await axios.post(`${BASE_URL}/postRoute/showPosts`, {});
                 // console.log(response.data);
                 document.getElementById('posts').innerHTML = ""
 

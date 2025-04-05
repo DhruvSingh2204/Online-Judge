@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { RxCross1 } from "react-icons/rx";
 import axios from 'axios';
+import BASE_URL from '../config.js';
 
 function PostModal({ correctUN , setModalopen , setShowpost }) {
     async function post() {
@@ -15,7 +16,7 @@ function PostModal({ correctUN , setModalopen , setShowpost }) {
             if (!topic) {
                 alert("Please write topic name");
             }
-            const response = await axios.post('http://localhost:5000/postRoute/post' , {
+            const response = await axios.post(`${BASE_URL}/postRoute/post` , {
                 correctUN , topic , content
             });
 

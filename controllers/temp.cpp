@@ -1,8 +1,7 @@
 
 #include<bits/stdc++.h>
 using namespace std;
+
 int main() {
-    // Write you code here....
-cout<<1<<endl;
-    return 0;
+    for(int i = 0;i<10;i++) cout<<i<<endl
 }

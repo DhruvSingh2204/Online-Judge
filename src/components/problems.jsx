@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import BASE_URL from '../config.js';
 
 function Problems({ correctUN }) {
     const [problems, setProblems] = useState([]);
@@ -11,10 +12,10 @@ function Problems({ correctUN }) {
     async function fetchProblems() {
         try {
             // console.log('Fetching problems for user:', correctUN);
-            const response = await axios.post('http://localhost:5000/problems/showProblems', {});
+            const response = await axios.post(`${BASE_URL}/problems/showProblems`, {});
             setProblems(response.data.allProblems || []);
 
-            const response2 = await axios.post('http://localhost:5000/problems/solved', { correctUN });
+            const response2 = await axios.post(`${BASE_URL}/problems/solved`, { correctUN });
             // console.log('Solved problems data:', response2.data);
 
             if (Array.isArray(response2.data)) {

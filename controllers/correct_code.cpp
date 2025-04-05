@@ -1,45 +1,36 @@
 #include<bits/stdc++.h>
 using namespace std;
 
-vector<int> two_sum(const vector<int>& nums, int target) {
-    unordered_map<int, int> seen;
-
-    for (int i = 0; i < nums.size(); ++i) {
-        int complement = target - nums[i];
-        
-        if (seen.find(complement) != seen.end()) {
-            return {seen[complement], i};
+bool isValid(string s) {
+    stack<char> st;
+    for (char c : s) {
+        if (c == '(' || c == '{' || c == '[') {
+            st.push(c);
+        } else {
+            if (st.empty()) return false;
+            char top = st.top();
+            st.pop();
+            if ((c == ')' && top != '(') ||
+                (c == '}' && top != '{') ||
+                (c == ']' && top != '[')) {
+                return false;
+            }
         }
-
-        // Otherwise, store the number and its index
-        seen[nums[i]] = i;
     }
-
-    return {};
+    return st.empty();
 }
 
 int main() {
-    int t;  // Number of test cases
+    int t;
     cin >> t;
-
     while (t--) {
-        int n, target;
-        cin >> n;
-        
-        vector<int> nums(n);
-        for (int i = 0; i < n; ++i) {
-            cin >> nums[i];
+        string s;
+        cin >> s;
+        if (isValid(s)) {
+            cout << "YES" << endl;
+        } else {
+            cout << "NO" << endl;
         }
-        
-        cin >> target;
-
-        vector<int> result = two_sum(nums, target);
-        if(result.empty()) {
-            cout<<-1<<endl;
-            continue;
-        }
-        cout<<result[0]<<" "<<result[1]<<endl;
     }
-
     return 0;
 }

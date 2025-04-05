@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import BASE_URL from '../config.js';
 
 function Profile({ correctUN }) {
     const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ function Profile({ correctUN }) {
 
     async function fetchUserData() {
         try {
-            const response = await axios.post('http://localhost:5000/auth/fetchUserData', { correctUN });
+            const response = await axios.post(`${BASE_URL}/auth/fetchUserData`, { correctUN });
             console.log(response.data[0]);
 
             setEmail(response.data[0].email);
@@ -31,7 +32,7 @@ function Profile({ correctUN }) {
     return (
         <Container>
             <ProfileImage
-                src="https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png"
+                src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
                 alt="Profile"
                 height="100px"
             />
@@ -79,8 +80,8 @@ const Container = styled.div`
     background-color: #141420;
     color: white;
     padding: 20px;
-    height: auto; /* Allow the height to adjust based on the content */
-    min-height: 90vh; /* Ensure the container has at least 90% of the viewport height */
+    height: auto;
+    min-height: 90vh;
 `;
 
 const ProfileImage = styled.img`

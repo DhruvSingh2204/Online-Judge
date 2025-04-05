@@ -5,6 +5,7 @@ import axios from 'axios';
 import { IoSend } from "react-icons/io5";
 import socket from '../socket'
 import { SwipeableDrawer, TextField, Button } from '@mui/material';
+import BASE_URL from '../config.js';
 
 function InterviewRoom() {
     const location = useLocation();
@@ -36,7 +37,7 @@ int main() {
 
     async function leave() {
         console.log(role, interviewID)
-        const response = await axios.post('http://localhost:5000/interview/leaveInterview', {
+        const response = await axios.post(`${BASE_URL}/interview/leaveInterview`, {
             role, interviewID
         });
 
@@ -53,7 +54,7 @@ int main() {
 
         document.getElementById('chatarea').value = '';
         const token = localStorage.getItem('token');
-        const response = await axios.post('http://localhost:5000/interview/sendmsg', {
+        const response = await axios.post(`${BASE_URL}/interview/sendmsg`, {
             role, interviewID, msg
         }, {
             headers: {
@@ -69,7 +70,7 @@ int main() {
 
     async function loadChat() {
         const token = localStorage.getItem('token');
-        const response = await axios.post('http://localhost:5000/interview/loadChat', {
+        const response = await axios.post(`${BASE_URL}/interview/loadChat`, {
             role, interviewID
         } , {
             headers: {
@@ -84,7 +85,7 @@ int main() {
 
     async function runCode() {
         console.log(customInput);
-        const response = await axios.post('http://localhost:5000/run/runUserCode' , {
+        const response = await axios.post(`${BASE_URL}/run/runUserCode`, {
             code ,
             customInput
         });
@@ -151,7 +152,7 @@ int main() {
                 socket.off('waiting');
             }
         };
-    }, [role, interviewID]); 
+    }, [role, interviewID]);
 
     return (
         <Container>

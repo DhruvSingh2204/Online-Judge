@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import socket from '../socket'
+import BASE_URL from '../config.js';
 
 function InterviewMain({correctUN}) {
     const [role, setRole] = useState('Interviewer');
@@ -31,7 +32,7 @@ function InterviewMain({correctUN}) {
                 return;
             }
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:5000/interview/startInterview', {
+            const response = await axios.post(`${BASE_URL}/interview/startInterview`, {
                 name,
                 interviewID,
                 role,
