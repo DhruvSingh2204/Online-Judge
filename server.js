@@ -69,10 +69,10 @@ io.on('connection', (socket) => {
         // console.log('data ->', data);
         const { interviewID, code2 } = data;
         if (!interviewID || !code2) {
-            console.log('Invalid data received:', interviewID, code2);
+            // console.log('Invalid data received:', interviewID, code2);
             return;
         }
-        console.log(`Received addToCode from ${socket.id} for room ${interviewID}:`, code2);
+        // console.log(`Received addToCode from ${socket.id} for room ${interviewID}:`, code2);
         io.to(interviewID).emit('addToYourCode', { code: code2 });
     });
 
