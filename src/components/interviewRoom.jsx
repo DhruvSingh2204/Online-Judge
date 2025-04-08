@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -6,32 +6,36 @@ import { IoSend } from "react-icons/io5";
 import socket from '../socket'
 import { SwipeableDrawer, TextField, Button } from '@mui/material';
 import BASE_URL from '../config.js';
+// import { debounce } from 'lodash';
+import Editor from '@monaco-editor/react';
+
 
 function InterviewRoom() {
     const location = useLocation();
     const { role, interviewID, name } = location.state || {};
     const navigate = useNavigate();
     const [chat, setChat] = useState([]);
-    const code1 = `
-#include<bits/stdc++.h>
+    const code1 = `#include<bits/stdc++.h>
 using namespace std;
 
 int main() {
     // Write your code here....
     return 0;
-}
-`;
+}`;
     const [code, setCode] = useState(code1);
 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [customInput, setCustomInput] = useState('');
     const [drawerOpen2, setDrawerOpen2] = useState(false);
-    const [output , setOutput] = useState('');
+    const [output, setOutput] = useState('');
+
+    // const emitAddToCode = debounce((code2) => {
+    //     socket.emit('addToCode', { interviewID, code2 });
+    // }, 300); // emits at most once every 300ms
 
     const handleChange = (e) => {
         const code2 = e.target.value;
         setCode(code2);
-        // console.log('Emitting addToCode:', { interviewID, code2 });
         socket.emit('addToCode', { interviewID, code2 });
     };
 
@@ -72,7 +76,7 @@ int main() {
         const token = localStorage.getItem('token');
         const response = await axios.post(`${BASE_URL}/interview/loadChat`, {
             role, interviewID
-        } , {
+        }, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -86,17 +90,17 @@ int main() {
     async function runCode() {
         console.log(customInput);
         const response = await axios.post(`${BASE_URL}/run/runUserCode`, {
-            code ,
+            code,
             customInput
         });
 
-        if(response.status == 201) {
+        if (response.status == 201) {
             setOutput(response.data.details);
             setDrawerOpen2(true);
             return;
         }
 
-        if(response.status == 202) {
+        if (response.status == 202) {
             setOutput('Runtime Error');
             setDrawerOpen2(true);
             return;
@@ -124,26 +128,26 @@ int main() {
             socket.emit('joinRoom', { interviewID });
             loadChat();
         }
-    
+
         socket.on('receiveMessage', ({ message, sender }) => {
             loadChat();
         });
-    
+
         socket.on('addToYourCode', ({ code }) => {
             console.log('Received addToYourCode:', code);
             setCode(code);
         });
-    
+
         socket.on('notWaiting', () => {
             console.log('Both users are in the room now.');
             document.getElementById('wait').innerText = '';
         });
-    
+
         socket.on('waiting', () => {
             console.log('Waiting for another user to join...');
             document.getElementById('wait').innerText = `Waiting for ${role === 'Interviewer' ? "Interviewee" : "Interviewer"} to join...`;
         });
-    
+
         return () => {
             if (socket) {
                 socket.off('receiveMessage');
@@ -179,7 +183,23 @@ int main() {
                 </div>
                 <div id='codearea'>
                     <h1>Code Area</h1>
-                    <textarea value={code} onChange={handleChange} />
+                    <Editor
+                        height="90%"
+                        defaultLanguage="cpp"
+                        value={code}
+                        onChange={(value) => {
+                            handleChange({ target: { value } });
+                        }}
+                        theme="vs-dark"
+                        options={{
+                            fontSize: 14,
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            wordWrap: 'on',
+                            automaticLayout: true,
+                        }}
+                    />
+
                     <div id='runsubmitbtn'>
                         <button onClick={() => runCode()}>Run</button>
                         <button onClick={toggleDrawer(true)}>Custom Input</button>

@@ -5,20 +5,19 @@ import axios from 'axios';
 import { SwipeableDrawer, Box, Typography, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import BASE_URL from '../config.js';
+import Editor from '@monaco-editor/react';
 
 function Solve({ correctUN }) {
     const location = useLocation();
     const { problem } = location.state || {};
 
-    const code1 = `
-#include<bits/stdc++.h>
+    const code1 = `#include<bits/stdc++.h>
 using namespace std;
 
 int main() {
     // Write your code here....
     return 0;
-}
-`;
+}`;
 
     const [code, setCode] = useState(code1);
     const [output, setOutput] = useState('');
@@ -44,8 +43,8 @@ int main() {
                 code: code,
                 inputs: problem.inputs,
                 output: problem.outputs,
-                correctUN ,
-                name : problem.name
+                correctUN,
+                name: problem.name
             });
 
             console.log(response);
@@ -168,11 +167,20 @@ int main() {
             </QuestionSection>
             <CodingSection>
                 <h2>Coding Area</h2>
-                <textarea id='codingtext'
-                    placeholder="Write your code here..."
+                <Editor
+                    height="90%"
+                    defaultLanguage="cpp"
                     value={code}
-                    onChange={handleChange}
+                    onChange={(value) => setCode(value)}
+                    theme="vs-dark"
+                    options={{
+                        fontSize: 14,
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        wordWrap: 'on',
+                    }}
                 />
+
                 <div id="run">
                     <button onClick={() => runUserInput()} id='runBtn'>Run</button>
                     <button onClick={() => run()} id='submitBtn' >Submit</button>
@@ -202,8 +210,8 @@ int main() {
                         padding: 2,
                         backgroundColor: '#1e1e2e',
                         color: 'white',
-                        maxHeight: '90vh', 
-                        overflowY: 'auto', 
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
                     }}
                 >
                     <IconButton
@@ -226,9 +234,9 @@ int main() {
                             padding: '10px',
                             borderRadius: '5px',
                             color: '#5cfa5c',
-                            whiteSpace: 'pre-wrap', 
-                            wordWrap: 'break-word', 
-                            overflow: 'auto', 
+                            whiteSpace: 'pre-wrap',
+                            wordWrap: 'break-word',
+                            overflow: 'auto',
                         }}
                     >
                         {output}
@@ -243,9 +251,9 @@ int main() {
                             borderRadius: '5px',
                             color: '#ffa500',
                             marginBottom: '20px',
-                            whiteSpace: 'pre-wrap', 
-                            wordWrap: 'break-word', 
-                            overflow: 'auto', 
+                            whiteSpace: 'pre-wrap',
+                            wordWrap: 'break-word',
+                            overflow: 'auto',
                         }}
                     >
                         {expectedOutput}
