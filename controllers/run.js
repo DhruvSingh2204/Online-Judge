@@ -6,74 +6,126 @@ const problemDB = require('../models/problems')
 const peopleDB = require('../models/people')
 
 exports.run = async (req, res) => {
-    // function for submit
-    const { code, inputs, output: expectedOutput, correctUN, name } = req.body;
-
-    // console.log('Code received: ', code);
-    // console.log('Inputs received: ', inputs);
-    // console.log('Expected Output: ', expectedOutput);
+    const { code, inputs, output: expectedOutput, correctUN, name, lang } = req.body;
 
     const normalizeInput = (input) => input.trim().replace(/\r\n|\r|\n/g, '\n');
+    const normalizeOutput = (output) => output.trim().replace(/\s+/g, ' ');
     const inputString = normalizeInput(inputs);
+    const expectedOutputNormalized = normalizeOutput(expectedOutput);
 
-    const filePath = path.join(__dirname, 'temp_code.cpp');
-    fs.writeFileSync(filePath, code);
+    const tempDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-    const outputFilePath = path.join(__dirname, 'temp_code.out');
-    const compileCommand = `g++ "${filePath}" -o "${outputFilePath}"`;
+    let fileName, filePath, compileCommand, runCommand;
 
-    exec(compileCommand, (compileErr, stdout, stderr) => {
-        if (compileErr) {
-            // console.error(`Compilation error: ${stderr}`);
-            wrongSubmission(correctUN, name, "Compile Error")
-            return res.status(201).json({ error: 'Compilation failed', details: stderr, expectedOutput: expectedOutput });
+    switch (lang) {
+        case 'cpp':
+            fileName = 'temp_code.cpp';
+            filePath = path.join(tempDir, fileName);
+            fs.writeFileSync(filePath, code);
+            const outputFilePath = path.join(tempDir, 'temp_code.out');
+            compileCommand = `g++ "${filePath}" -o "${outputFilePath}"`;
+            runCommand = `"${outputFilePath}"`;
+            break;
+
+        case 'py3':
+            fileName = 'temp_code.py';
+            filePath = path.join(tempDir, fileName);
+            fs.writeFileSync(filePath, code);
+            compileCommand = null;
+            runCommand = `python3 "${filePath}"`;
+            break;
+
+        case 'java':
+            fileName = 'Main.java';
+            filePath = path.join(tempDir, fileName);
+            fs.writeFileSync(filePath, code);
+            compileCommand = `javac "${filePath}"`;
+            runCommand = `java -cp "${tempDir}" Main`;
+            break;
+
+        default:
+            return res.status(400).json({ error: 'Unsupported language' });
+    }
+
+    const cleanup = () => {
+        try {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        } catch (err) {
+            console.error('Cleanup failed:', err);
         }
+    };
 
-        const runCommand = `"${outputFilePath}"`;
-        const runProcess = exec(runCommand);
+    const runProgram = () => {
+        const runProcess = exec(runCommand, { timeout: 5000 }, (err) => {
+            if (err && err.killed) {
+                wrongSubmission(correctUN, name, "Time Limit Exceeded");
+                cleanup();
+                return res.status(408).json({ error: 'Time Limit Exceeded', expectedOutput });
+            }
+        });
 
-        // console.log('Normalized Input String:\n', inputString);
         runProcess.stdin.write(inputString + '\n');
         runProcess.stdin.end();
 
         let output = '';
+        let errorOutput = '';
+
         runProcess.stdout.on('data', (data) => {
             output += data.toString();
         });
 
         runProcess.stderr.on('data', (data) => {
-            // console.error('Error:', data.toString());
+            errorOutput += data.toString();
         });
 
         runProcess.on('close', (code) => {
             if (code !== 0) {
-                wrongSubmission(correctUN, name, "Runtime Error")
-                return res.status(202).json({ error: 'Execution failed', expectedOutput: expectedOutput });
+                wrongSubmission(correctUN, name, "Runtime Error");
+                cleanup();
+                return res.status(202).json({
+                    error: 'Execution failed',
+                    stderr: errorOutput,
+                    expectedOutput
+                });
             }
 
-            const normalizeOutput = (output) => output.trim().replace(/\s+/g, ' ');
             const programOutputNormalized = normalizeOutput(output);
-            const expectedOutputNormalized = normalizeOutput(expectedOutput);
-
-            // console.log('Program Output:\n', output.trim());
-            // console.log('Normalized Program Output:', programOutputNormalized);
-            // console.log('Normalized Expected Output:', expectedOutputNormalized);
-
             const isOutputCorrect = programOutputNormalized === expectedOutputNormalized;
 
             if (isOutputCorrect) {
-                markInDatabase(correctUN, name)
+                markInDatabase(correctUN, name);
             } else {
-                wrongSubmission(correctUN, name, "Wrong Answer")
+                wrongSubmission(correctUN, name, "Wrong Answer");
             }
 
+            cleanup();
             return res.status(200).json({
                 output: output.trim(),
+                expectedOutput,
                 isOutputCorrect,
-                expectedOutput: expectedOutput
+                programOutputNormalized,
+                expectedOutputNormalized
             });
         });
-    });
+    };
+
+    if (compileCommand) {
+        exec(compileCommand, (compileErr, stdout, stderr) => {
+            if (compileErr) {
+                wrongSubmission(correctUN, name, "Compile Error");
+                cleanup();
+                return res.status(201).json({
+                    error: 'Compilation failed',
+                    details: stderr,
+                    expectedOutput
+                });
+            }
+            runProgram();
+        });
+    } else {
+        runProgram();
+    }
 };
 
 async function markInDatabase(correctUN, name) {
@@ -118,145 +170,161 @@ async function wrongSubmission(correctUN, name, verdict1) {
     await user.save();
 }
 
-exports.runUserInput = async (req, res) => {
-    const { code, inputs, name: problemName } = req.body;
-    // console.log(code);
+// Normalize output to compare fairly
+const normalizeOutput = (output) =>
+    output
+        .trim()
+        .split('\n')
+        .map(line => line.trim().toLowerCase())
+        .join('\n');
 
-    try {
-        // Fetch the problem from the database
-        const problem = await problemDB.find({ name: problemName });
-        if (problem.length === 0) {
-            return res.status(404).json({ message: "Problem not found" });
-        }
 
-        // Get the correct code from the database
-        const correctCode = problem[0].correctCode;
+// Map extensions and run/compile commands by language
+const getFileInfo = (base, language) => {
+    switch (language) {
+        case 'cpp':
+            return { file: `${base}.cpp`, exec: `${base}.out` };
+        case 'java':
+            return { file: `${base}.java`, exec: `Main.class` };
+        case 'py3':
+            return { file: `${base}.py`, exec: null };
+        default:
+            throw new Error('Unsupported language');
+    }
+};
 
-        // console.log('correct code -> ' , correctCode);
+const getCompileCommand = (filePath, language) => {
+    switch (language) {
+        case 'cpp': return `g++ "${filePath}" -o "${filePath.replace('.cpp', '.out')}"`;
+        case 'java': return `javac "${filePath}"`;
+        case 'py3': return null;
+    }
+};
 
-        // Paths for correct code, user code, and their output files
-        const correctCodeFile = path.join(__dirname, 'correct_code.cpp');
-        const userCodeFile = path.join(__dirname, 'user_code.cpp');
-        const correctOutputFile = path.join(__dirname, 'correct_output.txt');
-        const userOutputFile = path.join(__dirname, 'user_output.txt');
+const getRunCommand = (filePath, language) => {
+    switch (language) {
+        case 'cpp': return `"${filePath.replace('.cpp', '.out')}"`;
+        case 'java': return `java -cp "${path.dirname(filePath)}" Main`;
+        case 'py3': return `python3 "${filePath}"`;
+    }
+};
 
-        // Write correct code and user code to files
-        fs.writeFileSync(correctCodeFile, correctCode);
-        fs.writeFileSync(userCodeFile, code);
+const executeCode = async (filePath, inputs, language) => {
+    const compileCmd = getCompileCommand(filePath, language);
 
-        // Helper to normalize outputs
-        const normalizeOutput = (output) => output.trim().replace(/\s+/g, ' ').toLowerCase();
+    return new Promise((resolve, reject) => {
+        const runAfterCompile = () => {
+            const runCmd = getRunCommand(filePath, language);
+            const process = exec(runCmd, { timeout: 5000 });
 
-        // Function to compile, run code, and save its output
-        const executeCode = async (filePath, outputFile, inputs) => {
-            const outputFilePath = filePath.replace('.cpp', '.out');
-            const compileCommand = `g++ "${filePath}" -o "${outputFilePath}"`;
+            let output = '', error = '';
 
-            return new Promise((resolve, reject) => {
-                exec(compileCommand, (compileErr, stdout, stderr) => {
-                    if (compileErr) {
-                        console.log(compileErr)
-                        return res.status(201).json({ error: `Compilation failed`, details: stderr, correctOutput: correctOutput });
-                    }
+            process.stdin.write(inputs.trim() + '\n');
+            process.stdin.end();
 
-                    const runCommand = `"${outputFilePath}"`;
-                    const runProcess = exec(runCommand);
+            process.stdout.on('data', data => output += data.toString());
+            process.stderr.on('data', data => error += data.toString());
 
-                    runProcess.stdin.write(inputs.trim() + '\n');
-                    runProcess.stdin.end();
+            process.on('close', code => {
+                if (error && language === 'py3') {
+                    return reject({ type: 'runtime', error });
+                }
 
-                    let output = '';
-                    runProcess.stdout.on('data', (data) => {
-                        output += data.toString();
-                    });
+                if (code !== 0 && language !== 'py3') {
+                    return reject({ type: 'runtime', error });
+                }
 
-                    runProcess.stderr.on('data', (data) => {
-                        console.error('Execution Error:', data.toString());
-                    });
-
-                    runProcess.on('close', (code) => {
-                        if (code !== 0) {
-                            return res.status(202).json({ error: `Execution failed with code ${code}` });
-                        }
-                        fs.writeFileSync(outputFile, output.trim());
-                        resolve(normalizeOutput(output));
-                    });
-                });
+                resolve(normalizeOutput(output));
             });
         };
 
-        // Execute correct code and user code
-        const correctOutput = await executeCode(correctCodeFile, correctOutputFile, inputs);
-        const userOutput = await executeCode(userCodeFile, userOutputFile, inputs);
+        if (compileCmd) {
+            exec(compileCmd, (err, stdout, stderr) => {
+                if (err) {
+                    return reject({ type: 'compile', error: stderr });
+                }
 
-        // console.log('correct output -> ' , correctOutput)
-        // console.log('user output -> ' , userOutput)
+                if (language === 'java') {
+                    const compiledClassPath = path.join(path.dirname(filePath), 'Main.class');
+                    if (!fs.existsSync(compiledClassPath)) {
+                        return reject({ type: 'compile', error: 'Java compilation failed: Main.class not created' });
+                    }
+                }
 
-        // Compare the outputs
-        const isCorrect = correctOutput === userOutput;
+                runAfterCompile();
+            });
+        } else {
+            runAfterCompile();
+        }
+    });
+};
+
+exports.runUserInput = async (req, res) => {
+    const { code, inputs, name: problemName, language } = req.body;
+
+    try {
+        const problem = await problemDB.findOne({ name: problemName });
+        if (!problem) return res.status(404).json({ message: 'Problem not found' });
+
+        const correctCode = problem.correctCode;
+        const tempDir = path.join(__dirname, 'temp_run_input');
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+        // Save correct C++ code
+        const correctBase = path.join(tempDir, 'correct_code');
+        const userBase = path.join(tempDir, 'user_code');
+        const correctInfo = getFileInfo(correctBase, 'cpp');
+        const userInfo = getFileInfo(userBase, language);
+
+        fs.writeFileSync(correctInfo.file, correctCode);
+        fs.writeFileSync(userInfo.file, code);
+
+        let correctOutput, userOutput;
+
+        try {
+            correctOutput = await executeCode(correctInfo.file, inputs, 'cpp');
+            userOutput = await executeCode(userInfo.file, inputs, language);
+        } catch (err) {
+            if (err.type === 'compile') return res.status(201).json({ error: 'Compilation failed', details: err.error });
+            if (err.type === 'runtime') return res.status(202).json({ error: 'Execution failed', details: err.error });
+            return res.status(500).json({ error: 'Unexpected error', err });
+        }
 
         return res.status(200).json({
-            isCorrect,
+            isCorrect: correctOutput === userOutput,
             correctCodeOutput: correctOutput,
             userCodeOutput: userOutput
         });
-    } catch (error) {
-        console.error('Error in runUserInput:', error);
-        return res.status(500).json({ message: "Internal server error", error });
+    } catch (err) {
+        console.error('Error in runUserInput:', err);
+        return res.status(500).json({ message: 'Internal Server Error', error: err });
     }
 };
 
 exports.runUserCode = async (req, res) => {
-    const { code, customInput : inputs } = req.body;
+    const { code, customInput: inputs, language } = req.body;
 
-    const codeFileName = path.join(__dirname, 'temp.cpp');
-    const userOutputFile = path.join(__dirname, 'interview_output.txt');
+    try {
+        const tempDir = path.join(__dirname, 'temp_run_user');
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-    fs.writeFileSync(codeFileName, code);
+        const base = path.join(tempDir, 'interview_code');
+        const fileInfo = getFileInfo(base, language);
 
-    const normalizeOutput = (output) => output.trim().replace(/\s+/g, ' ').toLowerCase();
+        fs.writeFileSync(fileInfo.file, code);
 
-    // Function to compile, run code, and save its output
-    const executeCode = async (filePath, outputFile, inputs) => {
-        const outputFilePath = filePath.replace('.cpp', '.out');
-        const compileCommand = `g++ "${filePath}" -o "${outputFilePath}"`;
+        let output;
+        try {
+            output = await executeCode(fileInfo.file, inputs, language);
+        } catch (err) {
+            if (err.type === 'compile') return res.status(201).json({ error: 'Compilation failed', details: err.error });
+            if (err.type === 'runtime') return res.status(202).json({ error: 'Execution failed', details: err.error });
+            return res.status(500).json({ error: 'Unexpected error', err });
+        }
 
-        return new Promise((resolve, reject) => {
-            exec(compileCommand, (compileErr, stdout, stderr) => {
-                if (compileErr) {
-                    console.log(compileErr)
-                    return res.status(201).json({ error: `Compilation failed`, details: stderr });
-                }
-
-                const runCommand = `"${outputFilePath}"`;
-                const runProcess = exec(runCommand);
-
-                runProcess.stdin.write(inputs.trim() + '\n');
-                runProcess.stdin.end();
-
-                let output = '';
-                runProcess.stdout.on('data', (data) => {
-                    output += data.toString();
-                });
-
-                runProcess.stderr.on('data', (data) => {
-                    console.error('Execution Error:', data.toString());
-                });
-
-                runProcess.on('close', (code) => {
-                    if (code !== 0) {
-                        return res.status(202).json({ error: `Execution failed with code ${code}` });
-                    }
-                    fs.writeFileSync(outputFile, output.trim());
-                    resolve(normalizeOutput(output));
-                });
-            });
-        });
-    };
-
-    const userOutput = await executeCode(codeFileName, userOutputFile, inputs);
-
-    console.log(userOutput);
-
-    return res.status(200).json(userOutput);
-}
+        return res.status(200).json({ output });
+    } catch (err) {
+        console.error('Error in runUserCode:', err);
+        return res.status(500).json({ message: 'Internal Server Error', error: err });
+    }
+};

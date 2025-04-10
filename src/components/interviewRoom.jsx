@@ -15,6 +15,7 @@ function InterviewRoom() {
     const { role, interviewID, name } = location.state || {};
     const navigate = useNavigate();
     const [chat, setChat] = useState([]);
+    const [language, setLanguage] = useState('cpp');
     const code1 = `#include<bits/stdc++.h>
 using namespace std;
 
@@ -22,6 +23,22 @@ int main() {
     // Write your code here....
     return 0;
 }`;
+    const code2 = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Write your code here....
+    }
+}`;
+
+    const code3 = `# Write your code here....
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()`;
+
     const [code, setCode] = useState(code1);
 
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -88,10 +105,11 @@ int main() {
     }
 
     async function runCode() {
-        console.log(customInput);
+        // console.log(customInput);
         const response = await axios.post(`${BASE_URL}/run/runUserCode`, {
             code,
-            customInput
+            customInput,
+            language: language
         });
 
         if (response.status == 201) {
@@ -107,7 +125,7 @@ int main() {
         }
 
         console.log(response.data);
-        setOutput(response.data);
+        setOutput(response.data.output);
         setDrawerOpen2(true);
     }
 
@@ -183,8 +201,33 @@ int main() {
                 </div>
                 <div id='codearea'>
                     <h1>Code Area</h1>
+                    <select
+                        onChange={(e) => {
+                            const selectedLanguage = e.target.value;
+                            setLanguage(selectedLanguage);
+                            if (selectedLanguage === 'cpp') {
+                                setCode(code1);
+                            } else if (selectedLanguage === 'java') {
+                                setCode(code2);
+                            } else if (selectedLanguage === 'py3') {
+                                setCode(code3);
+                            }
+                        }}
+                        style={{
+                            marginBottom: '10px',
+                            padding: '5px',
+                            borderRadius: '5px',
+                            backgroundColor: '#2d2d2d',
+                            color: 'white',
+                            border: '1px solid white',
+                        }}
+                    >
+                        <option value="cpp">C++</option>
+                        <option value="java">Java</option>
+                        <option value="py3">Python 3</option>
+                    </select>
                     <Editor
-                        height="90%"
+                        height="80%"
                         defaultLanguage="cpp"
                         value={code}
                         onChange={(value) => {

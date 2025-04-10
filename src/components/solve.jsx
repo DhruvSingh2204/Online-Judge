@@ -19,13 +19,30 @@ int main() {
     return 0;
 }`;
 
+    const code2 = `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Write your code here....
+    }
+}`;
+
+    const code3 = `# Write your code here....
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()`;
+
     const [code, setCode] = useState(code1);
     const [output, setOutput] = useState('');
     const [expectedOutput, setExpectedOutput] = useState('');
-    const [isOutputSheetOpen, setOutputSheetOpen] = useState(false);  // State for output bottom sheet
-    const [isInputSheetOpen, setInputSheetOpen] = useState(false);    // State for input bottom sheet
+    const [isOutputSheetOpen, setOutputSheetOpen] = useState(false);
+    const [isInputSheetOpen, setInputSheetOpen] = useState(false);
     const [iscorrect, setIscorrect] = useState(0);
-    const [exampleInput, setExampleInput] = useState('');  // Store example input
+    const [exampleInput, setExampleInput] = useState('');
+    const [language , setLanguage] = useState('cpp');
 
     const handleChange = (e) => {
         setCode(e.target.value);
@@ -44,7 +61,8 @@ int main() {
                 inputs: problem.inputs,
                 output: problem.outputs,
                 correctUN,
-                name: problem.name
+                name: problem.name,
+                lang : language
             });
 
             console.log(response);
@@ -84,9 +102,10 @@ int main() {
             const response = await axios.post(`${BASE_URL}/run/runUserInput`, {
                 code: code,
                 inputs: exampleInput,
-                name: problem.name
+                name: problem.name,
+                language : language
             });
-            console.log(response)
+            // console.log(response)
 
             if (response.status === 201) {
                 document.getElementById('ans').innerText = "Compile Error";
@@ -167,6 +186,31 @@ int main() {
             </QuestionSection>
             <CodingSection>
                 <h2>Coding Area</h2>
+                <select
+                    onChange={(e) => {
+                        const selectedLanguage = e.target.value;
+                        setLanguage(selectedLanguage);
+                        if (selectedLanguage === 'cpp') {
+                            setCode(code1);
+                        } else if (selectedLanguage === 'java') {
+                            setCode(code2);
+                        } else if (selectedLanguage === 'py3') {
+                            setCode(code3);
+                        }
+                    }}
+                    style={{
+                        marginBottom: '10px',
+                        padding: '5px',
+                        borderRadius: '5px',
+                        backgroundColor: '#2d2d2d',
+                        color: 'white',
+                        border: '1px solid white',
+                    }}
+                >
+                    <option value="cpp">C++</option>
+                    <option value="java">Java</option>
+                    <option value="py3">Python 3</option>
+                </select>
                 <Editor
                     height="90%"
                     defaultLanguage="cpp"
