@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import BASE_URL from '../config.js';
@@ -14,46 +14,20 @@ function Login({ setCorrectUN, setCorrectEmail }) {
 
     async function handleSignUp(e) {
         e.preventDefault();
-
         try {
             const response = await axios.post(`${BASE_URL}/auth/signUp`, {
-                userName,
-                password,
-                email
+                userName, password, email
             });
-
-            // console.log(response.data)
-
             const token = response.data.token;
-            if (token) {
-                localStorage.setItem('token', token);
-            } else {
-                console.error('No token received');
-            }
-
+            if (token) localStorage.setItem('token', token);
             const responseDivSignup = document.getElementById('responseDivSignUp');
-
-            if (response.data.message == 'please input userName') {
-                responseDivSignup.innerText = 'Please input userName'
-                return;
-            }
-
-            if (response.data.message == 'please input password') {
-                responseDivSignup.innerText = 'Please input password'
-                return;
-            }
-
-            if (response.data.message == 'please input email') {
-                responseDivSignup.innerText = 'Please input email'
-                return;
-            }
-
+            if (response.data.message == 'please input userName') return responseDivSignup.innerText = 'Please input userName'
+            if (response.data.message == 'please input password') return responseDivSignup.innerText = 'Please input password'
+            if (response.data.message == 'please input email') return responseDivSignup.innerText = 'Please input email'
             setCorrectUN(response.data.user.userName)
             setCorrectEmail(response.data.user.email)
-
             localStorage.setItem('user', JSON.stringify(response.data.user.userName))
             localStorage.setItem('email', JSON.stringify(response.data.user.email))
-
             if (response.request.status == 200) {
                 setLoginSuccess(true)
                 navigate('/main')
@@ -65,51 +39,21 @@ function Login({ setCorrectUN, setCorrectEmail }) {
 
     async function handleLogin(e) {
         e.preventDefault();
-
         try {
             const response = await axios.post(`${BASE_URL}/auth/login`, {
-                userName,
-                password
+                userName, password
             });
-
-            // console.log(response.data)
-
             const responseDivLogin = document.getElementById('responseDivLogin');
-
-            if (response.data.message == 'please input userName') {
-                responseDivLogin.innerText = 'Please input userName';
-                console.log('Please input userName')
-                return;
-            }
-
-            if (response.data.message == 'please input password') {
-                responseDivLogin.innerText = 'Please input password';
-                return;
-            }
-
-            if (response.data.message == 'Wrong Password') {
-                responseDivLogin.innerText = 'Wrong Password';
-                return;
-            }
-
-            if (response.data.message == 'User not found') {
-                responseDivLogin.innerText = 'User not found'
-                return;
-            }
-
+            if (response.data.message == 'please input userName') return responseDivLogin.innerText = 'Please input userName'
+            if (response.data.message == 'please input password') return responseDivLogin.innerText = 'Please input password'
+            if (response.data.message == 'Wrong Password') return responseDivLogin.innerText = 'Wrong Password'
+            if (response.data.message == 'User not found') return responseDivLogin.innerText = 'User not found'
             const token = response.data.token;
-            if (token) {
-                localStorage.setItem('token', token);
-            } else {
-                console.error('No token received');
-            }
-
+            if (token) localStorage.setItem('token', token);
             setCorrectUN(response.data.user.userName)
             setCorrectEmail(response.data.user.email)
-
             localStorage.setItem('user', JSON.stringify(response.data.user.userName))
             localStorage.setItem('email', JSON.stringify(response.data.user.email))
-
             if (response.request.status == 200) {
                 setLoginSuccess(true)
                 navigate('/main')
@@ -120,131 +64,218 @@ function Login({ setCorrectUN, setCorrectEmail }) {
     }
 
     return (
-        <Container>
-            {!login ? <div id='signUp'>
-                <h1>Sign Up</h1>
-                <div>
-                    <input placeholder='userName' value={userName} onChange={(e) => setuserName(e.target.value)} id='input1' />
-                    <input placeholder='Password' value={password} onChange={(e) => setPassword(e.target.value)} id='input2' />
-                    <input placeholder='Email-ID' value={email} onChange={(e) => setEmail(e.target.value)} id='input3' />
-                </div>
+        <Page>
+            <GlowBox>
+                <Form>
+                    <h2>{login ? 'Login' : 'Sign Up'}</h2>
+                    <InputBox>
+                        <input
+                            type="text"
+                            required
+                            value={userName}
+                            onChange={(e) => setuserName(e.target.value)}
+                        />
+                        <span>Username</span>
+                        <i></i>
+                    </InputBox>
 
-                <button onClick={handleSignUp}>Submit</button>
-                <button onClick={() => setLogin(true)}>Login if already have and account</button>
-                <div id='responseDivSignUp'></div>
-            </div> : ''}
+                    {!login && (
+                        <InputBox>
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            <span>Email</span>
+                            <i></i>
+                        </InputBox>
+                    )}
 
-            {login ? <div id='Login'>
-                <h1>Login</h1>
+                    <InputBox>
+                        <input
+                            type="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <span>Password</span>
+                        <i></i>
+                    </InputBox>
 
-                <div>
-                    <input placeholder='UserName' value={userName} onChange={(e) => setuserName(e.target.value)} id='input4' />
-                    <input placeholder='password' value={password} onChange={(e) => setPassword(e.target.value)} id='input5' />
-                </div>
+                    <div className="links">
+                        {login ? (
+                            <>
+                                <a href="#">Forgot password?</a>
+                                <a href="#" onClick={() => setLogin(false)}>Sign Up</a>
+                            </>
+                        ) : (
+                            <a href="#" onClick={() => setLogin(true)}>Already have an account? Login</a>
+                        )}
+                    </div>
 
-                <button onClick={handleLogin}>Submit</button>
-                <button onClick={() => setLogin(false)}>SignUp for New User</button>
-                <div id='responseDivLogin'></div>
-            </div> : ''}
-        </Container>
+                    <input
+                        type="submit"
+                        value={login ? "Login" : "Sign Up"}
+                        onClick={login ? handleLogin : handleSignUp}
+                    />
+
+                    {login ? (
+                        <div id="responseDivLogin" style={{ marginTop: '10px', color: 'red' }}></div>
+                    ) : (
+                        <div id="responseDivSignUp" style={{ marginTop: '10px', color: 'red' }}></div>
+                    )}
+                </Form>
+            </GlowBox>
+        </Page>
     )
 }
 
 export default Login
 
-const Container = styled.div`
+const animate = keyframes`
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+`;
+
+const Page = styled.div`
     height: 100vh;
     width: 100vw;
+    background: #23242a;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: url('https://images.pexels.com/photos/714256/pexels-photo-714256.jpeg?cs=srgb&dl=pexels-denis-linine-214373-714256.jpg&fm=jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+`;
+
+const GlowBox = styled.div`
     position: relative;
+    width: 380px;
+    height: 520px;
+    border-radius: 8px;
+    background: #1c1c1c;
     overflow: hidden;
 
-    &::before {
+    &::before, &::after {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1;
+        top: -50%;
+        left: -50%;
+        width: 380px;
+        height: 520px;
+        background: linear-gradient(0deg, transparent, #45f4ff, #45f4ff);
+        transform-origin: bottom right;
+        animation: ${animate} 6s linear infinite;
     }
 
-    #signUp, #Login {
-        position: relative;
-        z-index: 2;
-        background: rgba(255, 255, 255, 0.85);
-        padding: 50px;
-        border-radius: 30px;
-        box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
+    &::after {
+        animation-delay: -3s;
+    }
+`;
+
+const Form = styled.div`
+    position: absolute;
+    inset: 2px;
+    border-radius: 8px;
+    background: #28292d;
+    z-index: 10;
+    padding: 50px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    h2 {
+        color: #45f3ff;
+        font-weight: 500;
+        text-align: center;
+        letter-spacing: 0.1em;
+    }
+
+    .links {
         display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 35vw;
-        max-width: 400px;
-        min-width: 300px;
+        justify-content: space-between;
+        width: 100%;
+        font-size: 0.75em;
+        margin-top: 40px;
+        margin-left: 10px;
 
-        h1 {
-            color: #2C3E50;
-            margin-bottom: 25px;
-            font-size: 2.2rem;
-            text-align: center;
-        }
-
-        div {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-
-            input {
-                margin: 10px 0;
-                height: 50px;
-                border-radius: 30px;
-                padding: 0 20px;
-                border: 1px solid #ddd;
-                width: 80%;
-                font-size: 1rem;
-                box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease;
-
-                &:focus {
-                    outline: none;
-                    border-color: #3498db;
-                    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
-                }
-            }
-        }
-
-        button {
-            border-radius: 30px;
-            padding: 12px;
-            margin: 15px 0;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            width: 80%;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
+        a {
+            color: #8f8f8f;
+            text-decoration: none;
 
             &:hover {
-                background-color: #2980b9;
-                transform: scale(1.05);
+                color: #45f3ff;
             }
         }
+    }
 
-        #responseDivSignUp, #responseDivLogin {
-            margin-top: 10px;
-            color: red;
-            font-size: 0.9rem;
+    input[type='submit'] {
+        border: none;
+        outline: none;
+        background: #45f3ff;
+        padding: 11px 25px;
+        width: 100%;
+        margin-top: 20px;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:active {
+            opacity: 0.8;
         }
+    }
+`;
+
+const InputBox = styled.div`
+    position: relative;
+    width: 300px;
+    margin-top: 35px;
+
+    input {
+        position: relative;
+        width: 100%;
+        padding: 10px 9px 10px;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #000000;
+        font-size: 1em;
+        letter-spacing: 0.05em;
+        z-index: 10;
+    }
+
+    span {
+        position: absolute;
+        left: 0;
+        padding: 10px 10px 10px;
+        font-size: 1em;
+        color: #8f8f8f;
+        pointer-events: none;
+        letter-spacing: 0.05em;
+        transition: 0.5s;
+    }
+
+    input:valid ~ span,
+    input:focus ~ span {
+        color: #45f3ff;
+        transform: translateX(0px) translateY(-34px);
+        font-size: 0.75em;
+    }
+
+    i {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 2px;
+        background: #45f3ff;
+        border-radius: 4px;
+        transition: 0.5s;
+        pointer-events: none;
+        z-index: 9;
+    }
+
+    input:valid ~ i,
+    input:focus ~ i {
+        height: 44px;
     }
 `;

@@ -218,7 +218,7 @@ const executeCode = async (filePath, inputs, language) => {
     return new Promise((resolve, reject) => {
         const runAfterCompile = () => {
             const runCmd = getRunCommand(filePath, language);
-            const process = exec(runCmd, { timeout: 5000 });
+            const process = exec(runCmd, { timeout: 50000 });
 
             let output = '', error = '';
 
