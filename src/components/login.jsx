@@ -145,6 +145,9 @@ const Page = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
+    background-image: url('/bg2.jpeg');
+    background-size: cover;
+    background-position: center;
 `;
 
 const GlowBox = styled.div`
