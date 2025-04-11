@@ -117,6 +117,9 @@ if __name__ == "__main__":
                 document.getElementById('ans').style.color = 'red';
                 setExpectedOutput(response.data.correctCodeOutput)
                 setOutput("")
+            } else if(response.status === 400) {
+                setOutput("No inputs provided")
+                setExpectedOutput("No expected output available")
             } else {
                 document.getElementById('ans').innerText = response.data.isCorrect ? "Correct Answer" : "Wrong Ans";
                 setExpectedOutput(response.data.correctCodeOutput)

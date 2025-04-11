@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const problemDB = require('../models/problems')
 const peopleDB = require('../models/people')
+const { v4: uuidv4 } = require('uuid');
 
 exports.run = async (req, res) => {
     const { code, inputs, output: expectedOutput, correctUN, name, lang } = req.body;
@@ -170,7 +171,7 @@ async function wrongSubmission(correctUN, name, verdict1) {
     await user.save();
 }
 
-// Normalize output to compare fairly
+// Normalize output for comparison
 const normalizeOutput = (output) =>
     output
         .trim()
@@ -178,8 +179,7 @@ const normalizeOutput = (output) =>
         .map(line => line.trim().toLowerCase())
         .join('\n');
 
-
-// Map extensions and run/compile commands by language
+// Get file name and executable name based on language
 const getFileInfo = (base, language) => {
     switch (language) {
         case 'cpp':
@@ -193,6 +193,7 @@ const getFileInfo = (base, language) => {
     }
 };
 
+// Compile command based on language
 const getCompileCommand = (filePath, language) => {
     switch (language) {
         case 'cpp': return `g++ "${filePath}" -o "${filePath.replace('.cpp', '.out')}"`;
@@ -201,6 +202,7 @@ const getCompileCommand = (filePath, language) => {
     }
 };
 
+// Run command based on language
 const getRunCommand = (filePath, language) => {
     switch (language) {
         case 'cpp': return `"${filePath.replace('.cpp', '.out')}"`;
@@ -209,6 +211,7 @@ const getRunCommand = (filePath, language) => {
     }
 };
 
+// Execute (and optionally compile) the code
 const executeCode = async (filePath, inputs, language) => {
     const compileCmd = getCompileCommand(filePath, language);
 
@@ -259,10 +262,37 @@ const executeCode = async (filePath, inputs, language) => {
     });
 };
 
+// Delete files after code execution
+const cleanupFiles = (fileInfo, language) => {
+    try {
+        const delay = process.platform === 'win32' ? 200 : 0;
+        setTimeout(() => {
+            try {
+                fs.rmSync(fileInfo.file, { force: true });
+                if (language === 'cpp') fs.rmSync(fileInfo.exec, { force: true });
+                if (language === 'java') fs.rmSync(path.join(path.dirname(fileInfo.file), 'Main.class'), { force: true });
+            } catch (err) {
+                console.warn('Cleanup warning:', err.message);
+            }
+        }, delay);
+    } catch (err) {
+        console.warn('Initial cleanup scheduling failed:', err.message);
+    }
+};
+
+// Handle code errors (compile/runtime)
+const handleCodeError = (err, res) => {
+    if (err.type === 'compile') return res.status(201).json({ error: 'Compilation failed', details: err.error });
+    if (err.type === 'runtime') return res.status(202).json({ error: 'Execution failed', details: err.error });
+    return res.status(500).json({ error: 'Unexpected error', err });
+};
+
+// Compare user output with correct output
 exports.runUserInput = async (req, res) => {
     const { code, inputs, name: problemName, language } = req.body;
 
     try {
+        if(!inputs) return res.status(400).json({ message: 'No input provided' });
         const problem = await problemDB.findOne({ name: problemName });
         if (!problem) return res.status(404).json({ message: 'Problem not found' });
 
@@ -270,9 +300,9 @@ exports.runUserInput = async (req, res) => {
         const tempDir = path.join(__dirname, 'temp_run_input');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-        // Save correct C++ code
-        const correctBase = path.join(tempDir, 'correct_code');
-        const userBase = path.join(tempDir, 'user_code');
+        const id = uuidv4();
+        const correctBase = path.join(tempDir, `correct_code_${id}`);
+        const userBase = path.join(tempDir, `user_code_${id}`);
         const correctInfo = getFileInfo(correctBase, 'cpp');
         const userInfo = getFileInfo(userBase, language);
 
@@ -285,9 +315,10 @@ exports.runUserInput = async (req, res) => {
             correctOutput = await executeCode(correctInfo.file, inputs, 'cpp');
             userOutput = await executeCode(userInfo.file, inputs, language);
         } catch (err) {
-            if (err.type === 'compile') return res.status(201).json({ error: 'Compilation failed', details: err.error });
-            if (err.type === 'runtime') return res.status(202).json({ error: 'Execution failed', details: err.error });
-            return res.status(500).json({ error: 'Unexpected error', err });
+            return handleCodeError(err, res);
+        } finally {
+            cleanupFiles(correctInfo, 'cpp');
+            cleanupFiles(userInfo, language);
         }
 
         return res.status(200).json({
@@ -301,6 +332,7 @@ exports.runUserInput = async (req, res) => {
     }
 };
 
+// Just run the user's code with custom input (for interview mode)
 exports.runUserCode = async (req, res) => {
     const { code, customInput: inputs, language } = req.body;
 
@@ -308,7 +340,8 @@ exports.runUserCode = async (req, res) => {
         const tempDir = path.join(__dirname, 'temp_run_user');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-        const base = path.join(tempDir, 'interview_code');
+        const id = uuidv4();
+        const base = path.join(tempDir, `interview_code_${id}`);
         const fileInfo = getFileInfo(base, language);
 
         fs.writeFileSync(fileInfo.file, code);
@@ -317,9 +350,9 @@ exports.runUserCode = async (req, res) => {
         try {
             output = await executeCode(fileInfo.file, inputs, language);
         } catch (err) {
-            if (err.type === 'compile') return res.status(201).json({ error: 'Compilation failed', details: err.error });
-            if (err.type === 'runtime') return res.status(202).json({ error: 'Execution failed', details: err.error });
-            return res.status(500).json({ error: 'Unexpected error', err });
+            return handleCodeError(err, res);
+        } finally {
+            cleanupFiles(fileInfo, language);
         }
 
         return res.status(200).json({ output });
