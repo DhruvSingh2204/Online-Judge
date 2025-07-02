@@ -17,7 +17,7 @@ function header({ setCorrectUN, setCorrectEmail }) {
   return (
     <Container>
       <div id='top'>
-        <a href='#'><h1>Online Judge</h1></a>
+        <a href='/main'><h1>Online Judge</h1></a>
         <div id='features'>
           <NavMenu>
             <a href="/main">

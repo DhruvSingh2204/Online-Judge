@@ -106,7 +106,7 @@ function Login({ setCorrectUN, setCorrectEmail }) {
                     <div className="links">
                         {login ? (
                             <>
-                                <a href="#">Forgot password?</a>
+                                {/* <a href="#">Forgot password?</a> */}
                                 <a href="#" onClick={() => setLogin(false)}>Sign Up</a>
                             </>
                         ) : (

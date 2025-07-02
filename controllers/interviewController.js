@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
 const interviewDB = require('../models/interview');
-const interview = require('../models/interview');
 
 exports.startInterview = async(req , res) => {
     const {name , interviewID , role} = req.body;
@@ -44,6 +43,8 @@ exports.leaveInterview = async(req , res) => {
     // console.log(role , interviewID)
 
     const interview = await interviewDB.findOne({interviewID : interviewID});
+
+    if(!interview) return res.status(404).json('Interview Room Not Found');
 
     console.log(interview)
 

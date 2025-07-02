@@ -60,20 +60,20 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('sendMessage', ({ interviewID, message, sender }) => {
+    socket.on('sendMessage', ({ interviewID, message, sender, dt }) => {
         console.log(`Message from ${sender} in room ${interviewID}: ${message}`);
-        io.to(interviewID).emit('receiveMessage', { sender, message });
+        io.to(interviewID).emit('receiveMessage', { sender, message, dt });
     });
 
     socket.on('addToCode', (data) => {
         // console.log('data ->', data);
-        const { interviewID, code2 } = data;
+        const { interviewID, code2 , role } = data;
         if (!interviewID || !code2) {
             // console.log('Invalid data received:', interviewID, code2);
             return;
         }
         // console.log(`Received addToCode from ${socket.id} for room ${interviewID}:`, code2);
-        io.to(interviewID).emit('addToYourCode', { code: code2 });
+        io.to(interviewID).emit('addToYourCode', { code: code2 , role });
     });
 
     socket.on('leaveRoom', ({ interviewID }) => {

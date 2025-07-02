@@ -16,6 +16,12 @@ function InterviewRoom() {
     const navigate = useNavigate();
     const [chat, setChat] = useState([]);
     const [language, setLanguage] = useState('cpp');
+    const chatRef = useRef(null);
+    useEffect(() => {
+        if (chatRef.current) {
+            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        }
+    }, [chat]);
     const code1 = `#include<bits/stdc++.h>
 using namespace std;
 
@@ -46,14 +52,10 @@ if __name__ == "__main__":
     const [drawerOpen2, setDrawerOpen2] = useState(false);
     const [output, setOutput] = useState('');
 
-    // const emitAddToCode = debounce((code2) => {
-    //     socket.emit('addToCode', { interviewID, code2 });
-    // }, 300); // emits at most once every 300ms
-
     const handleChange = (e) => {
         const code2 = e.target.value;
         setCode(code2);
-        socket.emit('addToCode', { interviewID, code2 });
+        socket.emit('addToCode', { interviewID, code2 , role });
     };
 
     async function leave() {
@@ -70,22 +72,42 @@ if __name__ == "__main__":
     }
 
     async function sendmsg() {
-        const msg = document.getElementById('chatarea').value;
-        if (msg == '') return;
+        const msg = document.getElementById('chatarea').value.trim();
+        if (msg === '') return;
 
         document.getElementById('chatarea').value = '';
-        const token = localStorage.getItem('token');
-        const response = await axios.post(`${BASE_URL}/interview/sendmsg`, {
-            role, interviewID, msg
-        }, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
 
-        // console.log(response);
-        if (socket) {
-            socket.emit('sendMessage', { interviewID, msg, role });
+        const tempId = `temp_${Date.now()}_${Math.random()}`;
+        const newMessage = {
+            _id: tempId,
+            sender: role,
+            message: msg,
+            dt: new Date().toISOString()
+        };
+
+        setChat(prevChat => [...prevChat, newMessage]);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(`${BASE_URL}/interview/sendmsg`, {
+                role, interviewID, msg
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (socket) {
+                socket.emit('sendMessage', {
+                    interviewID,
+                    message: msg,
+                    sender: role,
+                    dt: newMessage.dt
+                });
+            }
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            setChat(prevChat => prevChat.filter(message => message._id !== tempId));
         }
     }
 
@@ -147,13 +169,26 @@ if __name__ == "__main__":
             loadChat();
         }
 
-        socket.on('receiveMessage', ({ message, sender }) => {
-            loadChat();
+        socket.on('receiveMessage', ({ sender, message, dt }) => {
+            // console.log(`Message from ${sender}: ${message}`);
+
+            if (sender !== role) {
+                const newMessage = {
+                    _id: `temp_${Date.now()}_${Math.random()}`,
+                    sender,
+                    message,
+                    dt: dt || new Date().toISOString()
+                };
+
+                setChat(prevChat => [...prevChat, newMessage]);
+            }
         });
 
-        socket.on('addToYourCode', ({ code }) => {
+        socket.on('addToYourCode', ({ code , role : role2 }) => {
             console.log('Received addToYourCode:', code);
-            setCode(code);
+            if (role2 !== role) {
+                setCode(code);
+            }
         });
 
         socket.on('notWaiting', () => {
@@ -185,9 +220,9 @@ if __name__ == "__main__":
             </div>
             <div id='main'>
                 <div id='chat'>
-                    <div id='chats'>
+                    <div id='chats' ref={chatRef}>
                         {chat.map((item, index) => (
-                            <div id='onechat' key={index} className={item.sender === role ? 'own-message' : 'other-message'}>
+                            <div id='onechat' key={item._id || index} className={item.sender === role ? 'own-message' : 'other-message'}>
                                 <strong>{item.sender == role ? 'You' : item.sender}:</strong>
                                 {item.message}
                                 <small>{new Date(item.dt).toLocaleString()}</small>
